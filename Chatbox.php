@@ -11,7 +11,7 @@ include('actions/SecurityAction.php');
 <body onLoad="load_focus()">
     <?php include("navbar.php"); ?>
 
-    <div class="container-body">
+    <div class="container-body chat-layout">
         <!------------------------- sidebar left ----------------------------->
         <div class="sidebar-left">
             <div class="links">
@@ -86,6 +86,47 @@ include('actions/SecurityAction.php');
     <script src="AllMembers.js"></script>
     <script>
         $(document).ready(function(){
+            var messages = document.querySelector('.messages');
+            var messageRequestInFlight = false;
+            var lastMessagesMarkup = null;
+
+            function scrollMessagesToBottom(smooth) {
+                messages.scrollTo({
+                    top: messages.scrollHeight,
+                    behavior: smooth ? 'smooth' : 'auto'
+                });
+            }
+
+            function loadMessages(forceBottom) {
+                if (!window.selectedMemberId || messageRequestInFlight) return;
+
+                var memberId = window.selectedMemberId;
+                var wasAtBottom = messages.scrollHeight - messages.clientHeight - messages.scrollTop < 90;
+                messageRequestInFlight = true;
+
+                $.ajax({
+                    url: 'AllMessages.php',
+                    type: 'POST',
+                    data: { memberId: memberId },
+                    success: function(markup) {
+                        if (memberId !== window.selectedMemberId) return;
+                        if (markup === lastMessagesMarkup) {
+                            if (forceBottom) requestAnimationFrame(function() { scrollMessagesToBottom(true); });
+                            return;
+                        }
+                        lastMessagesMarkup = markup;
+                        messages.innerHTML = markup;
+                        if (forceBottom || wasAtBottom) {
+                            requestAnimationFrame(function() { scrollMessagesToBottom(true); });
+                        }
+                    },
+                    complete: function() {
+                        messageRequestInFlight = false;
+                        if (memberId !== window.selectedMemberId) loadMessages(true);
+                    }
+                });
+            }
+
             $('#send').click(function(){
             var message = $('#textarea').val();
 
@@ -103,7 +144,7 @@ include('actions/SecurityAction.php');
                         },
                         success: function(){
                             $('#textarea').val('');
-                            $('.messages').load('AllMessages.php', { memberId: window.selectedMemberId });
+                            loadMessages(true);
                         },
                         error: function(xhr){
                             console.error('Message insertion failed:', xhr.status, xhr.responseText);
@@ -112,25 +153,17 @@ include('actions/SecurityAction.php');
                     });
                 }
             });
+            setInterval(function(){ loadMessages(false); }, 1200);
+
+            $(document).on('click', '.member', function(){
+                window.selectedMemberId = $(this).data('member-id');
+                loadMessages(true);
+            });
         });
-        
-        
+
         function load_focus(){
             document.getElementById("textarea").focus();
         }
-        
-        setInterval('load_messages()', 400);
-        
-        var messages = document.querySelector(".messages");
-        
-        function load_messages(){
-            if(window.selectedMemberId){
-                $(".messages").load("AllMessages.php", { memberId: window.selectedMemberId }, function(){
-                    messages.scrollTop = messages.scrollHeight;
-                });
-            }
-        }
-        
 
     </script>
 
