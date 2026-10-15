@@ -1,10 +1,10 @@
 <nav>
     <div class="nav-left">
-        <img src="images/TSJWeb-logo.png" class="logo">
+        <img src="images/TSJWeb-logo.png" class="logo" alt="TSJWeb">
         <ul>
-            <li><a href="Home.php"><img src="images/home-light.png"></a></li>
-            <li><a href="Chatbox.php"><img src="images/message.png"></a></li>
-            <li><a href="Notification.php"><img src="images/notification.png"></a></li>
+            <li><a href="Home.php" aria-label="Home"><img src="images/home-light.png" alt=""></a></li>
+            <li><a href="Chatbox.php" aria-label="Messages"><img src="images/message.png" alt=""></a></li>
+            <li><a href="Notification.php" aria-label="Notifications"><img src="images/notification.png" alt=""></a></li>
         </ul>
     </div>
 
@@ -15,7 +15,7 @@
         echo $_SESSION['firstname']." ". $_SESSION['lastname'];
     }
     ?>
-    <img src="images/profil.png" class="user-img">
+    <img src="images/profil.png" class="user-img" alt="Account menu" title="Account menu">
     </div>
     <div class="slide_menu">
         <a href="#">

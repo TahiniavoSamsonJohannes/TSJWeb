@@ -10,13 +10,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['publish'])) {
     $image = $_FILES['post_image'] ?? null;
 
     if ($postText === '' && (!$image || $image['error'] === UPLOAD_ERR_NO_FILE)) {
-        $postError = 'Ajoutez un texte ou une image à votre publication.';
+        $postError = 'Add text or an image to your post.';
     } elseif (mb_strlen($postText) > 5000) {
-        $postError = 'Le texte ne peut pas dépasser 5 000 caractères.';
+        $postError = 'The text cannot exceed 5,000 characters.';
     } elseif ($image && $image['error'] !== UPLOAD_ERR_NO_FILE && $image['error'] !== UPLOAD_ERR_OK) {
-        $postError = 'Le chargement de l’image a échoué.';
+        $postError = 'Image upload failed.';
     } elseif ($image && $image['error'] === UPLOAD_ERR_OK && $image['size'] > 5 * 1024 * 1024) {
-        $postError = 'L’image ne peut pas dépasser 5 Mo.';
+        $postError = 'The image cannot be larger than 5 MB.';
     } else {
         $imagePath = null;
         if ($image && $image['error'] === UPLOAD_ERR_OK) {
@@ -24,15 +24,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['publish'])) {
             $mimeType = $finfo->file($image['tmp_name']);
             $allowedTypes = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/gif' => 'gif', 'image/webp' => 'webp'];
             if (!isset($allowedTypes[$mimeType])) {
-                $postError = 'Choisissez une image JPG, PNG, GIF ou WebP.';
+                $postError = 'Choose a JPG, PNG, GIF, or WebP image.';
             } else {
                 $uploadDirectory = __DIR__ . '/uploads/posts';
                 if (!is_dir($uploadDirectory) && !mkdir($uploadDirectory, 0755, true)) {
-                    $postError = 'Le dossier des images ne peut pas être créé.';
+                    $postError = 'The image folder could not be created.';
                 } else {
                     $fileName = bin2hex(random_bytes(16)) . '.' . $allowedTypes[$mimeType];
                     if (!move_uploaded_file($image['tmp_name'], $uploadDirectory . '/' . $fileName)) {
-                        $postError = 'L’image n’a pas pu être enregistrée.';
+                        $postError = 'The image could not be saved.';
                     } else {
                         $imagePath = 'uploads/posts/' . $fileName;
                     }
@@ -55,54 +55,54 @@ $posts = $postsQuery->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
     <?php include("head.php"); ?>
 <body>
     <?php include("navbar.php"); ?>
 
     <main class="container-body home-layout">
         <aside class="sidebar-left home-sidebar">
-            <div class="links"><img src="images/newspaper.png" alt=""><a href="#fil-actualite">Fil d’actualité</a></div>
-            <div class="links"><img src="images/web-development.png" alt=""><a href="#">Développement web</a></div>
-            <div class="links"><img src="images/usa-flag.png" alt=""><a href="#">Cours d’anglais</a></div>
+            <div class="links"><img src="images/newspaper.png" alt=""><a href="#fil-actualite">News Feed</a></div>
+            <div class="links"><img src="images/web-development.png" alt=""><a href="#">Web Development</a></div>
+            <div class="links"><img src="images/usa-flag.png" alt=""><a href="#">English Course</a></div>
             <div class="links"><img src="images/sports.png" alt=""><a href="#">Sports</a></div>
-            <div class="links"><img src="images/videos.png" alt=""><a href="#">Vidéos</a></div>
+            <div class="links"><img src="images/videos.png" alt=""><a href="#">Videos</a></div>
             <hr>
-            <div class="links"><img src="images/carnet.png" alt=""><a href="#">Bloc-notes</a></div>
+            <div class="links"><img src="images/carnet.png" alt=""><a href="#">Notepad</a></div>
         </aside>
 
-        <section class="home-feed" id="fil-actualite" aria-label="Fil d’actualité">
+        <section class="home-feed" id="fil-actualite" aria-label="News feed">
             <form class="post-composer" method="POST" enctype="multipart/form-data">
-                <h1>Partager une publication</h1>
-                <textarea name="post_text" maxlength="5000" placeholder="Quoi de neuf ?" aria-label="Texte de la publication"><?= htmlspecialchars($postText, ENT_QUOTES, 'UTF-8') ?></textarea>
+                <h1>Share a post</h1>
+                <textarea name="post_text" maxlength="5000" placeholder="What’s new?" aria-label="Post text"><?= htmlspecialchars($postText, ENT_QUOTES, 'UTF-8') ?></textarea>
                 <?php if ($postError !== ''): ?><p class="post-error" role="alert"><?= htmlspecialchars($postError, ENT_QUOTES, 'UTF-8') ?></p><?php endif; ?>
                 <div class="composer-actions">
-                    <label class="image-picker" for="post-image"><img src="images/add-image.png" alt=""> Ajouter une image</label>
+                    <label class="image-picker" for="post-image"><img src="images/add-image.png" alt=""> Add an image</label>
                     <input id="post-image" type="file" name="post_image" accept="image/jpeg,image/png,image/gif,image/webp">
-                    <button type="submit" name="publish" value="1">Publier</button>
+                    <button type="submit" name="publish" value="1">Post</button>
                 </div>
                 <span class="selected-image" id="selected-image"></span>
             </form>
 
             <?php if (!$posts): ?>
-                <div class="empty-feed"><h2>Bienvenue sur votre fil d’actualité</h2><p>Les publications de la communauté apparaîtront ici. Partagez la première !</p></div>
+                <div class="empty-feed"><h2>Welcome to your news feed</h2><p>Community posts will appear here. Share the first one!</p></div>
             <?php else: ?>
                 <?php foreach ($posts as $post): ?>
                     <article class="post-card">
                         <header class="post-header">
                             <img src="images/profil-blue.png" alt="" class="post-avatar">
                             <div><strong><?= htmlspecialchars($post['firstname'] . ' ' . $post['lastname'], ENT_QUOTES, 'UTF-8') ?></strong>
-                                <time datetime="<?= htmlspecialchars(date(DATE_ATOM, strtotime($post['created_at'])), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(date('d/m/Y à H:i', strtotime($post['created_at'])), ENT_QUOTES, 'UTF-8') ?></time>
+                                <time datetime="<?= htmlspecialchars(date(DATE_ATOM, strtotime($post['created_at'])), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(date('m/d/Y \a\t g:i A', strtotime($post['created_at'])), ENT_QUOTES, 'UTF-8') ?></time>
                             </div>
                         </header>
                         <?php if ($post['content'] !== ''): ?><p class="post-content"><?= nl2br(htmlspecialchars($post['content'], ENT_QUOTES, 'UTF-8')) ?></p><?php endif; ?>
-                        <?php if ($post['image_path']): ?><img class="post-image" src="<?= htmlspecialchars($post['image_path'], ENT_QUOTES, 'UTF-8') ?>" alt="Image publiée par <?= htmlspecialchars($post['firstname'] . ' ' . $post['lastname'], ENT_QUOTES, 'UTF-8') ?>" loading="lazy"><?php endif; ?>
+                        <?php if ($post['image_path']): ?><img class="post-image" src="<?= htmlspecialchars($post['image_path'], ENT_QUOTES, 'UTF-8') ?>" alt="Image posted by <?= htmlspecialchars($post['firstname'] . ' ' . $post['lastname'], ENT_QUOTES, 'UTF-8') ?>" loading="lazy"><?php endif; ?>
                     </article>
                 <?php endforeach; ?>
             <?php endif; ?>
         </section>
 
-        <aside class="sidebar-right home-info"><div class="members"><img src="images/member.png" alt=""><span>La communauté TSJWeb</span></div><p>Partagez vos idées, vos projets et vos découvertes avec les autres membres.</p></aside>
+        <aside class="sidebar-right home-info"><div class="members"><img src="images/member.png" alt=""><span>TSJWeb Community</span></div><p>Share your ideas, projects, and discoveries with other members.</p></aside>
     </main>
 
     <script src="jQuery-3.7.js"></script>

@@ -8,6 +8,12 @@
     <?php include("head.php"); ?>
 <body>
     <?php include("navbar.php"); ?>
+    <main class="notification-page">
+        <section class="notification-empty" aria-live="polite">
+            <h1>Notifications</h1>
+            <p>No notifications yet.</p>
+        </section>
+    </main>
     
 
 

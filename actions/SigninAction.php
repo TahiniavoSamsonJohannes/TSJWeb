@@ -17,7 +17,7 @@ if(isset($submit)){
 
         //Vérifier si les mots de passe sont identiques
         if($pass != $repass){
-            $error = "*Passwords are not the same!";
+            $error = "*Passwords do not match.";
         }else{
 
             $checkIfUserExists = $database->prepare("SELECT * FROM users WHERE firstname = ? AND lastname = ?");
@@ -26,7 +26,7 @@ if(isset($submit)){
 
             //Vérifier si l'utilisateur existe déjà            
             if($checkIfUserExists->rowCount() > 0){
-                $error = "*This user already exists...";
+                $error = "*This account already exists.";
             }else{
 
                 //Insérer l'utilisateur dans la base de donnée
@@ -40,7 +40,7 @@ if(isset($submit)){
 
         }
     }else{
-        $error = "*Please complete all the fields...";
+        $error = "*Please complete all fields.";
     }
 }
 

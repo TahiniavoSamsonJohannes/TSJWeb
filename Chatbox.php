@@ -66,11 +66,11 @@ include('actions/SecurityAction.php');
 
         <!------------------------- sidebar right ----------------------------->
     <div class="sidebar-right">
-        <div class="members">
-            <img src="images/member.png">
+        <button class="members members-toggle" type="button" aria-expanded="false" aria-controls="chat-members-list">
             <span>Members</span>
-        </div>
-            <div class="AllMembers">
+            <span class="members-toggle-icon" aria-hidden="true">&#9662;</span>
+        </button>
+            <div class="AllMembers" id="chat-members-list">
                 <?php include("AllMembers.php"); ?>
             </div>
             
@@ -148,7 +148,7 @@ include('actions/SecurityAction.php');
                         },
                         error: function(xhr){
                             console.error('Message insertion failed:', xhr.status, xhr.responseText);
-                            alert('The message could not be saved. Check the browser console and server error log.');
+                            alert('The message could not be saved. Check the browser console or server error log.');
                         }
                     });
                 }
@@ -164,6 +164,12 @@ include('actions/SecurityAction.php');
         function load_focus(){
             document.getElementById("textarea").focus();
         }
+
+        document.querySelector('.members-toggle').addEventListener('click', function() {
+            var isExpanded = this.getAttribute('aria-expanded') === 'true';
+            this.setAttribute('aria-expanded', String(!isExpanded));
+            this.closest('.sidebar-right').classList.toggle('members-list-open', !isExpanded);
+        });
 
     </script>
 

@@ -17,7 +17,7 @@ if(!empty($toUserId)){
         echo $User["firstname"] . " " . $User["lastname"];
 
 }else{
-    echo 'Messages';
+    echo 'Select a member';
 }
 
 ?>

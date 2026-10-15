@@ -16,7 +16,7 @@ if(isset($submit)){
         $UserInfos = $checkIfUserExists->fetch();
 
         if($checkIfUserExists->rowCount() == 0){
-            $error = "*Your id or password is incorrect...";
+            $error = "*Your identifier or password is incorrect.";
         }else{
             
             //Récupérer les données de l'user
@@ -31,7 +31,7 @@ if(isset($submit)){
         }
 
     }else{
-        $error = "*Please complete all the fields...";
+        $error = "*Please complete all fields.";
     }
 }
 
