@@ -25,6 +25,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_post'])) {
     exit();
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_post'])) {
+    $postId = filter_var($_POST['edit_post'], FILTER_VALIDATE_INT);
+    $updatedContent = trim((string)($_POST['edited_content'] ?? ''));
+    if ($postId && mb_strlen($updatedContent) <= 5000) {
+        $editPost = $database->prepare('UPDATE posts SET content=? WHERE id=? AND user_id=?');
+        $editPost->execute([$updatedContent, $postId, (int)$_SESSION['id']]);
+    }
+    header('Location: Home.php');
+    exit();
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['like_post'])) {
+    $postId = filter_var($_POST['like_post'], FILTER_VALIDATE_INT);
+    if ($postId) {
+        $like = $database->prepare('INSERT IGNORE INTO post_likes (post_id,user_id) VALUES (?,?)');
+        $like->execute([$postId, (int)$_SESSION['id']]);
+    }
+    header('Location: Home.php');
+    exit();
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['unlike_post'])) {
+    $postId = filter_var($_POST['unlike_post'], FILTER_VALIDATE_INT);
+    if ($postId) {
+        $unlike = $database->prepare('DELETE FROM post_likes WHERE post_id=? AND user_id=?');
+        $unlike->execute([$postId, (int)$_SESSION['id']]);
+    }
+    header('Location: Home.php');
+    exit();
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['publish'])) {
     $postText = trim($_POST['post_text'] ?? '');
     $postVisibility = ($_POST['visibility'] ?? 'public') === 'private' ? 'private' : 'public';
@@ -70,7 +101,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['publish'])) {
     }
 }
 
-$postsQuery = $database->prepare("SELECT posts.id, posts.user_id, posts.content, posts.image_path, posts.created_at, posts.visibility, users.firstname, users.lastname
+$postsQuery = $database->prepare("SELECT posts.id, posts.user_id, posts.content, posts.image_path, posts.created_at, posts.visibility, users.firstname, users.lastname, users.profile_image,
+    (SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id=posts.id) AS like_count,
+    EXISTS(SELECT 1 FROM post_likes mine WHERE mine.post_id=posts.id AND mine.user_id=?) AS liked_by_me
     FROM posts INNER JOIN users ON users.id = posts.user_id
     WHERE posts.user_id = ? OR (posts.visibility = 'public' AND NOT EXISTS (
       SELECT 1 FROM friendships blocked WHERE blocked.status = 'removed'
@@ -79,7 +112,7 @@ $postsQuery = $database->prepare("SELECT posts.id, posts.user_id, posts.content,
       SELECT 1 FROM friendships f WHERE f.status = 'accepted'
         AND ((f.user_id = ? AND f.friend_id = posts.user_id) OR (f.friend_id = ? AND f.user_id = posts.user_id))
     ) ORDER BY posts.created_at DESC, posts.id DESC");
-$postsQuery->execute([(int)$_SESSION['id'], (int)$_SESSION['id'], (int)$_SESSION['id'], (int)$_SESSION['id'], (int)$_SESSION['id']]);
+$postsQuery->execute([(int)$_SESSION['id'], (int)$_SESSION['id'], (int)$_SESSION['id'], (int)$_SESSION['id'], (int)$_SESSION['id'], (int)$_SESSION['id']]);
 $posts = $postsQuery->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
@@ -122,16 +155,24 @@ $posts = $postsQuery->fetchAll(PDO::FETCH_ASSOC);
                 <?php foreach ($posts as $post): ?>
                     <article class="post-card">
                         <header class="post-header">
-                            <img src="images/profil-blue.png" alt="" class="post-avatar">
+                            <img src="<?= htmlspecialchars('images/profile/'.($post['profile_image'] ?: 'cat.png'), ENT_QUOTES, 'UTF-8') ?>" alt="" class="post-avatar">
                             <div><strong><?= htmlspecialchars($post['firstname'] . ' ' . $post['lastname'], ENT_QUOTES, 'UTF-8') ?></strong> <span class="post-visibility-label"><?= $post['visibility'] === 'private' ? 'Private' : 'Public' ?></span>
                                 <time datetime="<?= htmlspecialchars(date(DATE_ATOM, strtotime($post['created_at'])), ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars(date('m/d/Y \a\t g:i A', strtotime($post['created_at'])), ENT_QUOTES, 'UTF-8') ?></time>
                             </div>
+                            <div class="post-controls">
                             <?php if ((int)$post['user_id'] === (int)$_SESSION['id']): ?>
-                                <form method="post" class="delete-post-form" onsubmit="return confirm('Delete this post?');"><button type="submit" name="delete_post" value="<?= (int)$post['id'] ?>">Delete</button></form>
+                                <button type="button" class="post-more-toggle" aria-label="More post options" aria-expanded="false" aria-controls="post-menu-<?= (int)$post['id'] ?>">&#8942;</button>
+                                <div class="post-more-menu" id="post-menu-<?= (int)$post['id'] ?>" hidden>
+                                    <button type="button" class="post-edit-toggle" data-post-id="<?= (int)$post['id'] ?>">Edit</button>
+                                    <form method="post" class="delete-post-form" onsubmit="return confirm('Delete this post?');"><button type="submit" name="delete_post" value="<?= (int)$post['id'] ?>">Delete</button></form>
+                                </div>
                             <?php endif; ?>
+                            </div>
                         </header>
-                        <?php if ($post['content'] !== ''): ?><p class="post-content"><?= nl2br(htmlspecialchars($post['content'], ENT_QUOTES, 'UTF-8')) ?></p><?php endif; ?>
+                        <?php if ($post['content'] !== ''): ?><p class="post-content" id="post-content-<?= (int)$post['id'] ?>"><?= nl2br(htmlspecialchars($post['content'], ENT_QUOTES, 'UTF-8')) ?></p><?php endif; ?>
+                        <?php if ((int)$post['user_id'] === (int)$_SESSION['id']): ?><form method="post" class="edit-post-form" id="edit-post-<?= (int)$post['id'] ?>"><input type="hidden" name="edit_post" value="<?= (int)$post['id'] ?>"><textarea name="edited_content" maxlength="5000"><?= htmlspecialchars($post['content'], ENT_QUOTES, 'UTF-8') ?></textarea><button type="submit">Save</button><button type="button" class="post-edit-cancel">Cancel</button></form><?php endif; ?>
                         <?php if ($post['image_path']): ?><img class="post-image" src="<?= htmlspecialchars($post['image_path'], ENT_QUOTES, 'UTF-8') ?>" alt="Image posted by <?= htmlspecialchars($post['firstname'] . ' ' . $post['lastname'], ENT_QUOTES, 'UTF-8') ?>" loading="lazy"><?php endif; ?>
+                        <form method="post" class="post-like-form"><button type="submit" name="<?= $post['liked_by_me'] ? 'unlike_post' : 'like_post' ?>" value="<?= (int)$post['id'] ?>" aria-pressed="<?= $post['liked_by_me'] ? 'true' : 'false' ?>"><?= $post['liked_by_me'] ? '♥ Liked' : '♡ Like' ?> · <?= (int)$post['like_count'] ?></button></form>
                     </article>
                 <?php endforeach; ?>
             <?php endif; ?>
@@ -143,6 +184,10 @@ $posts = $postsQuery->fetchAll(PDO::FETCH_ASSOC);
     <script src="jQuery-3.7.js"></script>
     <script src="slide_menu.js"></script>
     <script>
+        document.querySelectorAll('.post-more-toggle').forEach(function(button){button.addEventListener('click',function(){var menu=document.getElementById(this.getAttribute('aria-controls'));var open=menu.hidden;document.querySelectorAll('.post-more-menu').forEach(function(item){item.hidden=true;});document.querySelectorAll('.post-more-toggle').forEach(function(item){item.setAttribute('aria-expanded','false');});menu.hidden=!open;this.setAttribute('aria-expanded',String(open));});});
+        document.addEventListener('click',function(event){if(!event.target.closest('.post-controls')){document.querySelectorAll('.post-more-menu').forEach(function(menu){menu.hidden=true;});document.querySelectorAll('.post-more-toggle').forEach(function(button){button.setAttribute('aria-expanded','false');});}});
+        document.querySelectorAll('.post-edit-toggle').forEach(function(button){button.addEventListener('click',function(){var form=document.getElementById('edit-post-'+this.dataset.postId);this.closest('.post-more-menu').hidden=true;this.closest('.post-controls').querySelector('.post-more-toggle').setAttribute('aria-expanded','false');form.classList.toggle('is-open');if(form.classList.contains('is-open'))form.querySelector('textarea').focus();});});
+        document.querySelectorAll('.post-edit-cancel').forEach(function(button){button.addEventListener('click',function(){this.closest('.edit-post-form').classList.remove('is-open');});});
         document.getElementById('post-image').addEventListener('change', function () {
             document.getElementById('selected-image').textContent = this.files.length ? this.files[0].name : '';
         });

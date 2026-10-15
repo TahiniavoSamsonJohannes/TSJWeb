@@ -8,12 +8,16 @@ require("database.php");
 @$sex = htmlspecialchars($_POST['sex']);
 @$pass = $_POST['pass'];
 @$repass = $_POST['repass'];
+@$profileImage = basename((string)($_POST['profile_image'] ?? 'cat.png'));
 @$submit = $_POST['submit'];
 
 if(isset($submit)){
     //Vérifier si les champs ne sont pas vides
     if(!empty($lastname) AND !empty($firstname) AND !empty($birthday) 
     AND !empty($sex) AND !empty($pass)){
+
+        $allowedProfileImages = ['cat.png','fox.png','lion.png','owl.png','panda.png','penguin.png','rabbit.png'];
+        if (!in_array($profileImage, $allowedProfileImages, true)) $profileImage = 'cat.png';
 
         //Vérifier si les mots de passe sont identiques
         if($pass != $repass){
@@ -32,9 +36,9 @@ if(isset($submit)){
                 //Insérer l'utilisateur dans la base de donnée
                 // Laisser MySQL générer id grâce à AUTO_INCREMENT.
                 $insertUserInfos = $database->prepare(
-                    "INSERT INTO users (firstname, lastname, birthday, sex, password) VALUES (?, ?, ?, ?, ?)"
+                    "INSERT INTO users (firstname, lastname, birthday, sex, password, profile_image) VALUES (?, ?, ?, ?, ?, ?)"
                 );
-                $insertUserInfos->execute([$firstname, $lastname, $birthday, $sex, md5($pass)]);
+                $insertUserInfos->execute([$firstname, $lastname, $birthday, $sex, md5($pass), $profileImage]);
 
                 header("Location:Login.php");
                 exit();

@@ -23,7 +23,10 @@ if(isset($submit)){
             $_SESSION['id'] = $UserInfos['id'];
             $_SESSION['firstname'] = $UserInfos['firstname'];
             $_SESSION['lastname'] = $UserInfos['lastname'];
+            $_SESSION['profile_image'] = $UserInfos['profile_image'] ?: 'cat.png';
             $_SESSION['auth'] = true;
+            $touch = $database->prepare('UPDATE users SET last_seen=NOW() WHERE id=?');
+            $touch->execute([(int)$UserInfos['id']]);
 
             //Redirection vers la page Home
             header("Location:Home.php");

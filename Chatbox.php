@@ -8,7 +8,7 @@ include('actions/SecurityAction.php');
 <!DOCTYPE html>
 <html lang="en">
     <?php include("head.php"); ?>
-<body onLoad="load_focus()">
+<body class="chat-page" onLoad="load_focus()">
     <?php include("navbar.php"); ?>
 
     <div class="container-body chat-layout">
@@ -49,18 +49,14 @@ include('actions/SecurityAction.php');
         <!------------------------- private message ----------------------------->
     <div class="private-message">
         <div class="user-chat">
-            <div class="toUser">
-
-                <?php include("actions/MemberAction.php"); ?>
-                
-            </div>
+            <div class="toUser"><span class="chat-placeholder">Choisissez un membre</span></div>
 
             <div class="messages"></div>
 
         </div>
         <div class="write-messages">
             <textarea id="textarea" placeholder="Write your message..."></textarea>
-            <label class="message-image-picker" id="message-image-button" for="message-image"><span class="message-image-picker-text">Choose image</span><span id="message-image-name"></span></label>
+            <label class="message-image-picker" id="message-image-button" for="message-image"><img src="images/add-image.png" alt=""><span class="message-image-picker-text">Choose image</span><span id="message-image-name"></span></label>
             <input id="message-image" type="file" accept="image/jpeg,image/png,image/gif,image/webp">
             <button id="send">Send</button>
         </div>
@@ -68,17 +64,13 @@ include('actions/SecurityAction.php');
 
         <!------------------------- sidebar right ----------------------------->
     <div class="sidebar-right">
-        <button class="members members-toggle" type="button" aria-expanded="false" aria-controls="chat-members-list">
-            <span>Members</span>
-            <span class="members-toggle-icon" aria-hidden="true">&#9662;</span>
-        </button>
-            <div class="AllMembers" id="chat-members-list">
-                <label class="member-search-label" for="member-search">Search members</label>
+        <div class="AllMembers" id="chat-members-list">
+            <div class="member-search-wrap">
+                <label class="member-search-label" for="member-search">Search people</label>
                 <input id="member-search" type="search" autocomplete="off" placeholder="Type a name..." aria-controls="member-results">
-                <div id="member-results" aria-live="polite"></div>
-                <?php include("AllMembers.php"); ?>
             </div>
-            
+            <div id="member-results" aria-live="polite"></div>
+            <?php include("AllMembers.php"); ?>
         </div>
 
     </div>
@@ -94,6 +86,8 @@ include('actions/SecurityAction.php');
             var messages = document.querySelector('.messages');
             var messageRequestInFlight = false;
             var lastMessagesMarkup = null;
+            var longPressTimer = null;
+            var longPressTarget = null;
 
             function scrollMessagesToBottom(smooth) {
                 messages.scrollTo({
@@ -165,11 +159,33 @@ include('actions/SecurityAction.php');
                 }
             });
             setInterval(function(){ loadMessages(false); }, 1200);
+            setInterval(function(){ if(window.selectedMemberId && document.visibilityState==='visible') $('.toUser').load('actions/MemberAction.php',{memberId:window.selectedMemberId}); }, 60000);
 
             $(document).on('click', '.member', function(){
                 window.selectedMemberId = $(this).data('member-id');
+                document.querySelector('.chat-layout').classList.add('conversation-open');
                 loadMessages(true);
             });
+            $(document).on('click', '.chat-back', function(){ document.querySelector('.chat-layout').classList.remove('conversation-open'); });
+
+            function copyBubbleText(bubble) {
+                var clone = bubble.cloneNode(true);
+                clone.querySelectorAll('img').forEach(function(image) { image.remove(); });
+                var text = (clone.innerText || clone.textContent).trim();
+                if (!text) return;
+                if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).catch(function() {});
+                else { var input=document.createElement('textarea'); input.value=text; input.style.position='fixed'; input.style.opacity='0'; document.body.appendChild(input); input.select(); try { document.execCommand('copy'); } catch(e) {} input.remove(); }
+            }
+            $(document).on('touchstart', '.myMessage span, .hisOrherMessage span', function(){
+                longPressTarget=this;
+                this.classList.add('message-pressing');
+                longPressTimer=setTimeout(function(){ if(longPressTarget){ copyBubbleText(longPressTarget); longPressTarget.classList.add('message-copied'); setTimeout(function(){ longPressTarget && longPressTarget.classList.remove('message-copied'); },500); } },500);
+            });
+            $(document).on('touchend touchmove touchcancel', '.myMessage span, .hisOrherMessage span', function(){ clearTimeout(longPressTimer); this.classList.remove('message-pressing'); longPressTarget=null; });
+
+            var touchStartX=0;
+            document.querySelector('.chat-layout').addEventListener('touchstart',function(e){touchStartX=e.changedTouches[0].screenX;},{passive:true});
+            document.querySelector('.chat-layout').addEventListener('touchend',function(e){var delta=e.changedTouches[0].screenX-touchStartX;if(delta > 60 && window.selectedMemberId && !this.classList.contains('conversation-open'))this.classList.add('conversation-open');if(delta < -60 && this.classList.contains('conversation-open'))this.classList.remove('conversation-open');},{passive:true});
         });
 
         function load_focus(){
@@ -181,12 +197,6 @@ include('actions/SecurityAction.php');
             picker.classList.toggle('has-image', this.files.length > 0);
             document.getElementById('message-image-name').textContent = this.files.length ? this.files[0].name : '';
             document.querySelector('.message-image-picker-text').textContent = this.files.length ? 'Image selected' : 'Choose image';
-        });
-
-        document.querySelector('.members-toggle').addEventListener('click', function() {
-            var isExpanded = this.getAttribute('aria-expanded') === 'true';
-            this.setAttribute('aria-expanded', String(!isExpanded));
-            this.closest('.sidebar-right').classList.toggle('members-list-open', !isExpanded);
         });
 
     </script>

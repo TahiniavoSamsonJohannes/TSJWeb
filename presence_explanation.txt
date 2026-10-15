@@ -1,0 +1,37 @@
+Présence et temps écoulé depuis la dernière connexion
+=====================================================
+
+Champ utilisé
+-------------
+La table users contient last_seen (date et heure de dernière activité). Une
+valeur NULL signifie que le membre n'a encore jamais eu d'activité enregistrée
+depuis l'ajout de cette fonction. Dans ce cas, l'interface n'affiche aucun
+statut ni délai.
+
+Mise à jour
+-----------
+Une page authentifiée met last_seen à l'heure courante lors de son chargement.
+La barre de navigation envoie aussi un heartbeat toutes les 30 secondes. La
+déconnexion explicite recule last_seen de deux minutes pour que le membre soit
+immédiatement considéré hors ligne. Si le navigateur est fermé sans déconnexion,
+les heartbeats cessent et son activité devient automatiquement ancienne.
+
+Calcul du statut
+----------------
+Le serveur MySQL calcule le nombre de secondes entre last_seen et NOW() avec
+TIMESTAMPDIFF. Le calcul est fait dans la même base horaire que les mises à
+jour, ce qui évite de comparer l'heure MySQL à celle du serveur PHP.
+
+- Moins de 45 secondes : « en ligne ».
+- De 45 à 59 secondes : « à l’instant ».
+- À partir d'une minute : afficher uniquement la plus grande unité entière
+  écoulée. Exemples : 1min, 30min, 1h, 23h, 1j, 3sem, 1mois, 11mois, 1an.
+- last_seen NULL : ne rien afficher sous le nom.
+
+Les durées longues utilisent des unités fixes pour conserver un libellé simple :
+1 an = 365 jours, 1 mois = 30 jours, 1 semaine = 7 jours, puis jour, heure et
+minute. Il n'y a jamais de combinaison comme « 1j15min ».
+
+La limite de 45 secondes laisse une marge au heartbeat de 30 secondes et aux
+variations de réseau, sans maintenir trop longtemps l'état « en ligne » après
+la fermeture inattendue d'un navigateur.

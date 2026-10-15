@@ -1,7 +1,7 @@
 <?php
 include('actions/SecurityAction.php');
 require_once 'database.php';
-$requests = $database->prepare("SELECT f.user_id,u.firstname,u.lastname FROM friendships f
+$requests = $database->prepare("SELECT f.user_id,u.firstname,u.lastname,u.profile_image FROM friendships f
     JOIN users u ON u.id=f.user_id WHERE f.friend_id=? AND f.status='pending' ORDER BY f.created_at DESC");
 $requests->execute([(int)$_SESSION['id']]);
 $requests = $requests->fetchAll(PDO::FETCH_ASSOC);
@@ -18,13 +18,13 @@ $requests = $requests->fetchAll(PDO::FETCH_ASSOC);
                 <div class="friend-requests">
                     <?php foreach ($requests as $request): ?>
                         <article class="friend-request">
-                            <img src="images/profil-blue.png" alt="">
+                            <img src="images/profile/<?= htmlspecialchars($request['profile_image'] ?: 'cat.png',ENT_QUOTES,'UTF-8') ?>" alt="">
                             <strong><?= htmlspecialchars($request['firstname'].' '.$request['lastname'],ENT_QUOTES,'UTF-8') ?></strong>
                             <form method="post" action="actions/FriendAction.php">
                                 <input type="hidden" name="userId" value="<?= (int)$request['user_id'] ?>">
                                 <input type="hidden" name="returnTo" value="Notification.php">
                                 <button name="action" value="accept" type="submit">Accept</button>
-                                <button name="action" value="reject" type="submit" class="reject-request">Decline</button>
+                                <button name="action" value="reject" type="submit" class="reject-request" onclick="return confirm('Decline this friend request?');">Decline</button>
                             </form>
                         </article>
                     <?php endforeach; ?>
