@@ -18,6 +18,15 @@
     <img src="images/profil.png" class="user-img" alt="Account menu" title="Account menu">
     </div>
     <div class="slide_menu">
+        <a href="Profile.php">
+            <div class="slide-element-container">
+                <div class="slide-element">
+                    <img src="images/profil-blue.png" class="settings" alt="">
+                    <span>Profile</span>
+                </div>
+                <img src="images/arrow.png" class="arrow" alt="">
+            </div>
+        </a>
         <a href="#">
             <div class="slide-element-container">
                 <div class="slide-element">

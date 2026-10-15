@@ -30,11 +30,14 @@ if(isset($submit)){
             }else{
 
                 //Insérer l'utilisateur dans la base de donnée
-                $insertUserInfos = $database->prepare("INSERT INTO users(firstname, lastname, birthday, sex, password)
-                VALUES (?, ?, ?, ?, ?)");
-                $insertUserInfos->execute(array($firstname,$lastname,$birthday,$sex,md5($pass)));
+                // Laisser MySQL générer id grâce à AUTO_INCREMENT.
+                $insertUserInfos = $database->prepare(
+                    "INSERT INTO users (firstname, lastname, birthday, sex, password) VALUES (?, ?, ?, ?, ?)"
+                );
+                $insertUserInfos->execute([$firstname, $lastname, $birthday, $sex, md5($pass)]);
 
                 header("Location:Login.php");
+                exit();
             
             }
 

@@ -1,9 +1,16 @@
 <?php
-$dbHost = 'sql208.infinityfree.com';
+// $dbHost = 'sql208.infinityfree.com';
+// $dbPort = 3306;
+// $dbName = 'if0_43180411_tsjweb';
+// $dbUsername = 'if0_43180411';
+// $dbPassword = '12345678TSJ';
+
+// En local
+$dbHost = 'localhost';
 $dbPort = 3306;
-$dbName = 'if0_43180411_tsjweb';
-$dbUsername = 'if0_43180411';
-$dbPassword = '12345678TSJ';
+$dbName = 'tsjweb';
+$dbUsername = 'root';
+$dbPassword = '';
 
 try {
     $dsn = "mysql:host={$dbHost};port={$dbPort};dbname={$dbName};charset=utf8mb4";

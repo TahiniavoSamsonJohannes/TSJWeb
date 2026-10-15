@@ -60,6 +60,8 @@ include('actions/SecurityAction.php');
         </div>
         <div class="write-messages">
             <textarea id="textarea" placeholder="Write your message..."></textarea>
+            <label class="message-image-picker" id="message-image-button" for="message-image"><span class="message-image-picker-text">Choose image</span><span id="message-image-name"></span></label>
+            <input id="message-image" type="file" accept="image/jpeg,image/png,image/gif,image/webp">
             <button id="send">Send</button>
         </div>
     </div>
@@ -71,6 +73,9 @@ include('actions/SecurityAction.php');
             <span class="members-toggle-icon" aria-hidden="true">&#9662;</span>
         </button>
             <div class="AllMembers" id="chat-members-list">
+                <label class="member-search-label" for="member-search">Search members</label>
+                <input id="member-search" type="search" autocomplete="off" placeholder="Type a name..." aria-controls="member-results">
+                <div id="member-results" aria-live="polite"></div>
                 <?php include("AllMembers.php"); ?>
             </div>
             
@@ -130,20 +135,26 @@ include('actions/SecurityAction.php');
             $('#send').click(function(){
             var message = $('#textarea').val();
 
-                if(message!=""){
+                if(message!=="" || document.getElementById('message-image').files.length){
                     if(!window.selectedMemberId){
                         return;
                     }
 
+                    var formData = new FormData();
+                    formData.append('message', message);
+                    formData.append('toUserId', window.selectedMemberId);
+                    var imageFile = document.getElementById('message-image').files[0];
+                    if (imageFile) formData.append('message_image', imageFile);
                     $.ajax({
                         url: "actions/insertMessageAction.php",
                         type: "POST",
-                        data:{
-                            message: message,
-                            toUserId: window.selectedMemberId
-                        },
+                        data: formData,
+                        processData: false,
+                        contentType: false,
                         success: function(){
                             $('#textarea').val('');
+                            $('#message-image').val('');
+                            document.getElementById('message-image').dispatchEvent(new Event('change'));
                             loadMessages(true);
                         },
                         error: function(xhr){
@@ -164,6 +175,13 @@ include('actions/SecurityAction.php');
         function load_focus(){
             document.getElementById("textarea").focus();
         }
+
+        document.getElementById('message-image').addEventListener('change', function () {
+            var picker = document.getElementById('message-image-button');
+            picker.classList.toggle('has-image', this.files.length > 0);
+            document.getElementById('message-image-name').textContent = this.files.length ? this.files[0].name : '';
+            document.querySelector('.message-image-picker-text').textContent = this.files.length ? 'Image selected' : 'Choose image';
+        });
 
         document.querySelector('.members-toggle').addEventListener('click', function() {
             var isExpanded = this.getAttribute('aria-expanded') === 'true';
